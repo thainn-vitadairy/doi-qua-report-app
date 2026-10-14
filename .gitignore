@@ -1,0 +1,6 @@
+.streamlit/secrets.toml
+.env
+__pycache__/
+*.duckdb
+*.zip
+*.enc

@@ -1,0 +1,9 @@
+[theme]
+primaryColor = "#176A51"
+backgroundColor = "#F8FAF7"
+secondaryBackgroundColor = "#EEF3EE"
+textColor = "#243C33"
+font = "sans serif"
+baseFontSize = 18
+metricValueFontSize = "44px"
+metricValueFontWeight = 700
