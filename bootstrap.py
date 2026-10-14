@@ -90,7 +90,7 @@ try:
 except Exception:
     st.error('Chưa tải được bản báo cáo. Vui lòng liên hệ người quản lý báo cáo.');st.stop()
 
-with st.sidebar:
+with st.container(horizontal=True,vertical_alignment='center'):
     st.caption('Tài khoản: '+st.session_state['_report_session']['email'])
     if st.button('Đăng xuất',key='cloud_logout'):
         st.session_state.clear();st.rerun()
