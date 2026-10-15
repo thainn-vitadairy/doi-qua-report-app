@@ -7,11 +7,14 @@ from password_auth import verify_password,session_valid,credential_version,RateL
 from encrypted_payload import decrypt_payload
 from release_pointer import read_pointer
 from runtime_store import RuntimeStore
+from email_auth import report_accounts
 
 st.set_page_config(page_title='VitaDairy · Báo cáo đổi quà',page_icon='◈',layout='wide')
 try:
     accounts={key:dict(value) for key,value in st.secrets['report_users'].items()}
     artifact=dict(st.secrets['artifact'])
+    email_settings=dict(st.secrets.get('email_login',{}))
+    if email_settings.get('enabled') is True:accounts=report_accounts(accounts,email_settings)
     if not accounts or not all(k in artifact for k in ('url','sha256','key')):raise ValueError('Missing configuration')
 except (KeyError,ValueError,FileNotFoundError):
     st.info('Báo cáo đang chờ hoàn tất cấu hình truy cập.');st.stop()
@@ -36,20 +39,29 @@ def attempt_login():
     st.session_state['_report_session']={'email':email,'version':credential_version(account),'expires':now+8*3600}
     st.session_state.pop('_login_error',None)
 
-if not session_valid(st.session_state.get('_report_session'),accounts,time.time()):
+def valid_session():
+    session=st.session_state.get('_report_session')
+    return (session_valid(session,accounts,time.time()) and
+            (email_settings.get('enabled') is not True or session.get('method')=='email_otp'))
+
+if not valid_session():
     st.session_state.pop('_report_session',None)
     st.markdown('''<style>.block-container{max-width:560px;padding-top:10vh}
         [data-testid="stForm"]{padding:28px;border-radius:18px;background:white;border:1px solid #dce6dc}
         h1{color:#174b35!important;font-size:34px!important}.login-kicker{color:#a58132;letter-spacing:2px;font-weight:700}
         </style><div class="login-kicker">VITADAIRY · LOYALTY PERFORMANCE</div>''',unsafe_allow_html=True)
     st.title('Báo cáo đổi quà')
-    st.write('Đăng nhập bằng tài khoản được cấp cho báo cáo.')
-    with st.form('report_login'):
-        st.text_input('Email',key='_report_email',max_chars=254)
-        st.text_input('Mật khẩu báo cáo',type='password',key='_report_password',max_chars=1024)
-        st.form_submit_button('Đăng nhập',type='primary',on_click=attempt_login,width='stretch')
-    if st.session_state.get('_login_error'):st.error(st.session_state['_login_error'])
-    st.caption('Dùng mật khẩu riêng của báo cáo. Không nhập mật khẩu Microsoft 365.')
+    if email_settings.get('enabled') is True:
+        from email_login import render_email_login
+        render_email_login(accounts,email_settings,limiter())
+    else:
+        st.write('Đăng nhập bằng tài khoản được cấp cho báo cáo.')
+        with st.form('report_login'):
+            st.text_input('Email',key='_report_email',max_chars=254)
+            st.text_input('Mật khẩu báo cáo',type='password',key='_report_password',max_chars=1024)
+            st.form_submit_button('Đăng nhập',type='primary',on_click=attempt_login,width='stretch')
+        if st.session_state.get('_login_error'):st.error(st.session_state['_login_error'])
+        st.caption('Dùng mật khẩu riêng của báo cáo. Không nhập mật khẩu Microsoft 365.')
     st.stop()
 
 class SafeRedirect(urllib.request.HTTPRedirectHandler):
@@ -81,7 +93,7 @@ def runtime_store():return RuntimeStore()
 
 @st.fragment(run_every='5m')
 def check_release():
-    if not session_valid(st.session_state.get('_report_session'),accounts,time.time()):st.rerun()
+    if not valid_session():st.rerun()
     pointer=Path(__file__).parent/'current_release.json'
     try:version=read_pointer(json.loads(pointer.read_text(encoding='utf-8')),artifact['key'])['sha256']
     except (OSError,ValueError,KeyError,TypeError):return

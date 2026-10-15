@@ -1,7 +1,7 @@
 {
   "payload": {
-    "url": "https://github.com/thainn-vitadairy/doi-qua-report-app/releases/download/report-20261015T014913Z/report.enc",
-    "sha256": "8be68d18d4a2c113835a0a85e74c96d66bc2c3d69d2f8cd0e899178dbb961470"
+    "url": "https://github.com/thainn-vitadairy/doi-qua-report-app/releases/download/report-20261015T023239Z/report.enc",
+    "sha256": "83fa367fa92668f33b2bc142f51179ed0c7253c018ca92fe004811cb0ebd0f9f"
   },
-  "signature": "792231803ff076ecdb81bb2140e4d2ef616b4c25e81360b5b975cf44e137b823"
+  "signature": "a23bc23707ebbc850a16b203b39ef13af4a62da663fb2f436d2855f1b1d3b7e7"
 }
