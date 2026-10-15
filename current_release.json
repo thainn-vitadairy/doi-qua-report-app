@@ -1,0 +1,7 @@
+{
+  "payload": {
+    "url": "https://github.com/thainn-vitadairy/doi-qua-report-app/releases/download/report-20261015T014042Z/report.enc",
+    "sha256": "05a09cd736deb575897c8a6ef75b3ae71c27c4237bc84c72db0d22c9a5627531"
+  },
+  "signature": "eb8f01d97769ed19e6eec88684fd90d15df212bc0c5249514116219d5f064938"
+}
