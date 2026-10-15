@@ -1,8 +1,30 @@
 """Email-code login screen. Provider must be configured before this mode is enabled."""
 import time
 import streamlit as st
-from email_auth import EmailAuth,AuthenticationError
+from email_auth import EmailAuth,AuthenticationError,allowlist_session
 from password_auth import credential_version
+
+
+def render_allowlist_login(accounts,limiter):
+    """Email-only access chosen by the owner; no OTP or password request."""
+    def enter():
+        email=st.session_state.get('_report_email','').strip().lower()
+        now=time.time();client=getattr(st.context,'ip_address',None)
+        try:allowed=limiter.reserve('access:'+email,str(client) if client else '',now)
+        except Exception:allowed=False
+        if not allowed:
+            st.session_state['_access_error']='Đã vượt số lần thử. Vui lòng thử lại sau 15 phút.';return
+        session=allowlist_session(email,accounts,now)
+        if session is None:
+            st.session_state['_access_error']='Email chưa được cấp quyền xem báo cáo. Vui lòng liên hệ người quản lý.';return
+        limiter.success('access:'+email)
+        st.session_state['_report_session']=session
+        st.session_state.pop('_access_error',None)
+    st.write('Nhập email công ty đã được cấp quyền xem báo cáo.')
+    with st.form('email_access'):
+        st.text_input('Email công ty',key='_report_email',max_chars=254,placeholder='ten@vitadairy.com.vn')
+        st.form_submit_button('Vào báo cáo',on_click=enter,type='primary',width='stretch')
+    if st.session_state.get('_access_error'):st.error(st.session_state['_access_error'])
 
 
 def render_email_login(accounts,settings,limiter):

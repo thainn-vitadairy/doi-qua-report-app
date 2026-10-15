@@ -1,4 +1,4 @@
-"""Protected report launcher: dedicated credentials + authenticated encrypted snapshot."""
+"""Encrypted report launcher with owner-configured access mode."""
 from pathlib import Path
 import hashlib,io,os,re,runpy,shutil,sys,tempfile,time,urllib.request,urllib.parse,zipfile,json
 import streamlit as st
@@ -7,13 +7,14 @@ from password_auth import verify_password,session_valid,credential_version,RateL
 from encrypted_payload import decrypt_payload
 from release_pointer import read_pointer
 from runtime_store import RuntimeStore
-from email_auth import report_accounts
+from email_auth import report_accounts,login_mode
 
 st.set_page_config(page_title='VitaDairy · Báo cáo đổi quà',page_icon='◈',layout='wide')
 try:
     accounts={key:dict(value) for key,value in st.secrets['report_users'].items()}
     artifact=dict(st.secrets['artifact'])
     email_settings=dict(st.secrets.get('email_login',{}))
+    access_mode=login_mode(email_settings)
     if email_settings.get('enabled') is True:accounts=report_accounts(accounts,email_settings)
     if not accounts or not all(k in artifact for k in ('url','sha256','key')):raise ValueError('Missing configuration')
 except (KeyError,ValueError,FileNotFoundError):
@@ -42,16 +43,20 @@ def attempt_login():
 def valid_session():
     session=st.session_state.get('_report_session')
     return (session_valid(session,accounts,time.time()) and
-            (email_settings.get('enabled') is not True or session.get('method')=='email_otp'))
+            session.get('method','password')=={'password':'password','otp':'email_otp','allowlist':'email_allowlist'}[access_mode])
 
 if not valid_session():
-    st.session_state.pop('_report_session',None)
+    # Reset report widget state when access is revoked/expired or mode changes.
+    if '_report_session' in st.session_state:st.session_state.clear()
     st.markdown('''<style>.block-container{max-width:560px;padding-top:10vh}
         [data-testid="stForm"]{padding:28px;border-radius:18px;background:white;border:1px solid #dce6dc}
         h1{color:#174b35!important;font-size:34px!important}.login-kicker{color:#a58132;letter-spacing:2px;font-weight:700}
         </style><div class="login-kicker">VITADAIRY · LOYALTY PERFORMANCE</div>''',unsafe_allow_html=True)
     st.title('Báo cáo đổi quà')
-    if email_settings.get('enabled') is True:
+    if access_mode=='allowlist':
+        from email_login import render_allowlist_login
+        render_allowlist_login(accounts,limiter())
+    elif access_mode=='otp':
         from email_login import render_email_login
         render_email_login(accounts,email_settings,limiter())
     else:

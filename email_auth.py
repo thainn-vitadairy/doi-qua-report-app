@@ -1,5 +1,25 @@
 """Server-to-server Supabase email OTP; verified identity plus report allowlist."""
 import json,re,urllib.request,urllib.error
+try:
+    from .password_auth import credential_version
+except ImportError:
+    from password_auth import credential_version
+
+
+def login_mode(settings):
+    if settings.get('enabled') is not True:return 'password'
+    mode=settings.get('mode','otp')
+    if mode not in ('otp','allowlist'):raise ValueError('Invalid access mode')
+    return mode
+
+
+def allowlist_session(email,accounts,now):
+    """Owner-approved email gate. This does NOT verify mailbox ownership."""
+    email=email.strip().lower()
+    account=accounts.get(email)
+    if not account or account.get('enabled') is not True:return None
+    return {'email':email,'version':credential_version(account),
+            'expires':now+8*3600,'method':'email_allowlist'}
 
 
 class AuthenticationError(Exception):
