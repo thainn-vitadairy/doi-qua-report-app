@@ -24,16 +24,18 @@ class RuntimeStore:
             meta=json.loads(manifest.read_text(encoding='utf-8'));database=meta['database']
             if Path(database).name!=database or not (stage/'local'/database).is_file():raise ValueError('Missing database')
             files=[p for p in stage.rglob('*') if p.is_file() and p!=manifest]+[manifest]
-            code_changed=False
+            presentation_changed=False
             for src in files:
                 dst=self.root/src.relative_to(stage)
                 if dst.is_file() and hashlib.sha256(dst.read_bytes()).digest()==hashlib.sha256(src.read_bytes()).digest():continue
-                code_changed|=src.suffix=='.py'
+                # Asset registries and base64 images use module-level caches too.
+                # An image-only release must invalidate them just like new code.
+                presentation_changed|=src.suffix=='.py' or src.relative_to(stage).parts[0]=='assets'
                 dst.parent.mkdir(parents=True,exist_ok=True)
                 temp_dst=dst.with_name(dst.name+'.updating');shutil.copyfile(src,temp_dst);os.replace(temp_dst,dst)
-            if code_changed:
+            if presentation_changed:
                 for name,module in list(sys.modules.items()):
                     location=getattr(module,'__file__',None)
                     if location and Path(location).is_relative_to(self.root):sys.modules.pop(name,None)
             self.version=version
-            return code_changed
+            return presentation_changed
