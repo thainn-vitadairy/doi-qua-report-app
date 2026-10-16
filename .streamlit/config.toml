@@ -1,8 +1,8 @@
 [theme]
-primaryColor = "#176A51"
-backgroundColor = "#F8FAF7"
-secondaryBackgroundColor = "#EEF3EE"
-textColor = "#243C33"
+primaryColor = "#087BB8"
+backgroundColor = "#F4F7FB"
+secondaryBackgroundColor = "#EAF1F8"
+textColor = "#173451"
 font = "sans serif"
 baseFontSize = 18
 metricValueFontSize = "44px"
